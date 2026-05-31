@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>TrafiCam — Demo Module 5</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<style>
+:root{
+  --primary:#1D9E75;--pd:#0F6E56;--pl:#E1F5EE;
+  --acc:#E24B4A;--al:#FCEBEB;
+  --emb:#EF9F27;--el:#FAEEDA;
+  --res:#639922;--rl:#EAF3DE;
+  --bg:#F2F4F3;--card:#FFF;
+  --tx:#111814;--ts:#5A6B63;--tt:#9AADA5;
+  --bd:#E0E8E4;--sh:rgba(0,0,0,.07);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Sans',sans-serif;background:#0d0d0d;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:20px;gap:20px}
+.phone-frame{width:390px;height:844px;background:var(--bg);border-radius:44px;border:8px solid #222;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 40px 80px rgba(0,0,0,.7),inset 0 0 0 1px #333;flex-shrink:0}
+.notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:28px;background:#222;border-radius:0 0 18px 18px;z-index:200}
+.backend-panel{width:320px;display:flex;flex-direction:column;gap:12px;padding-top:4px}
+.panel-card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:16px;overflow:hidden}
+.panel-title{font-size:12px;font-weight:700;color:#888;letter-spacing:.8px;text-transform:uppercase;padding:12px 14px 8px;border-bottom:1px solid #222;display:flex;align-items:center;gap:8px}
+.panel-dot{width:7px;height:7px;border-radius:50%}
+.dot-green{background:#1D9E75;animation:blink 1.5s infinite}
+.dot-yellow{background:#EF9F27}
+.dot-red{background:#E24B4A}
+.dot-blue{background:#4FC3F7;animation:blink 1.5s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.console-body{padding:10px;max-height:200px;overflow-y:auto;font-family:'DM Mono',monospace;font-size:11px}
+.console-body::-webkit-scrollbar{width:4px}
+.console-body::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+.log-line{padding:3px 6px;border-radius:4px;margin-bottom:2px;display:flex;gap:8px;align-items:flex-start}
+.log-time{color:#555;flex-shrink:0}
+.log-get{color:#4FC3F7}.log-post{color:#81C784}.log-ws{color:#CE93D8}.log-err{color:#EF9F27}.log-auto{color:#80DEEA}.log-push{color:#FFD54F}
+.log-method{font-weight:700;flex-shrink:0}.log-msg{color:#ccc;word-break:break-all}
+.db-list{padding:10px;max-height:180px;overflow-y:auto}
+.db-list::-webkit-scrollbar{width:4px}
+.db-list::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+.db-row{display:flex;gap:8px;padding:6px 8px;border-radius:6px;margin-bottom:4px;align-items:center;background:#111;border:1px solid #222}
+.db-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0}
+.db-badge.acc{background:#3a1515;color:#F87171}
+.db-badge.emb{background:#3a2a10;color:#FBBF24}
+.db-badge.auto{background:#102a2a;color:#34D399}
+.db-info{flex:1;min-width:0}
+.db-lieu{font-size:12px;color:#ddd;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.db-meta{font-size:10px;color:#555;font-family:'DM Mono',monospace;margin-top:1px}
+.db-cf{font-size:11px;color:#1D9E75;font-weight:700;flex-shrink:0}
+
+/* Push notifications panel */
+.push-list{padding:10px;max-height:180px;overflow-y:auto;display:flex;flex-direction:column;gap:6px}
+.push-item{background:#111;border:1px solid #2a2a2a;border-radius:8px;padding:8px 10px;display:flex;gap:8px;align-items:flex-start;animation:fadeInPush .4s ease}
+@keyframes fadeInPush{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:translateX(0)}}
+.push-ico{font-size:16px;flex-shrink:0;margin-top:1px}
+.push-body{flex:1;min-width:0}
+.push-title{font-size:11px;font-weight:700;color:#FFD54F}
+.push-msg{font-size:10px;color:#aaa;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.push-time{font-size:10px;color:#555;font-family:'DM Mono',monospace;margin-top:2px}
+.push-badge{font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;flex-shrink:0;margin-top:2px}
+.push-badge.acc{background:#3a1515;color:#F87171}
+.push-badge.emb{background:#3a2a10;color:#FBBF24}
+
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:10px}
+.stat-box{background:#111;border:1px solid #222;border-radius:8px;padding:10px;text-align:center}
+.stat-n{font-size:24px;font-weight:700;color:#1D9E75;font-family:'DM Mono',monospace}
+.stat-l{font-size:10px;color:#666;margin-top:2px;letter-spacing:.3px}
+.gps-track{padding:10px;display:flex;flex-direction:column;gap:6px}
+.gps-row{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:#111;border-radius:6px;border:1px solid #222}
+.gps-label{font-size:11px;color:#888;font-family:'DM Mono',monospace}
+.gps-val{font-size:11px;color:#4FC3F7;font-family:'DM Mono',monospace;font-weight:500}
+.gps-slow{color:#FBBF24}
+.ws-clients{font-size:11px;color:#CE93D8;font-family:'DM Mono',monospace}
+
+/* APP */
+.sb{height:44px;padding:12px 22px 0;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.sb.g{background:var(--primary)}.sb.w{background:var(--card);border-bottom:.5px solid var(--bd)}
+.st{font-size:13px;font-weight:600}.sb.g .st{color:#fff}.sb.w .st{color:var(--tx)}
+.screen{display:none;flex-direction:column;flex:1;overflow:hidden}.screen.active{display:flex}
+.topbar{background:var(--primary);padding:8px 18px 14px;flex-shrink:0}
+.topbar-row{display:flex;justify-content:space-between;align-items:center}
+.app-name{font-size:22px;font-weight:700;color:#fff;letter-spacing:-.5px}
+.app-sub{font-size:12px;color:rgba(255,255,255,.8);margin-top:2px}
+.tb-btn{width:34px;height:34px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;font-size:16px;position:relative}
+.notif-badge{position:absolute;top:-2px;right:-2px;width:14px;height:14px;background:#E24B4A;border-radius:50%;font-size:9px;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;border:1.5px solid var(--primary)}
+.map-wrap{height:240px;position:relative;flex-shrink:0}
+#map{width:100%;height:100%;z-index:1}
+.map-ctrls{position:absolute;right:12px;bottom:68px;display:flex;flex-direction:column;gap:8px;z-index:10}
+.map-btn{width:38px;height:38px;background:#fff;border:none;border-radius:10px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.fab{position:absolute;bottom:14px;right:14px;width:52px;height:52px;border-radius:50%;background:var(--primary);border:none;cursor:pointer;font-size:26px;color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(29,158,117,.45);z-index:10;transition:transform .15s}
+.fab:hover{transform:scale(1.05)}.fab:active{transform:scale(.96)}
+.gps-badge{position:absolute;top:10px;left:10px;background:rgba(255,255,255,.92);border-radius:20px;padding:4px 10px;font-size:11px;font-weight:600;color:var(--primary);z-index:10;display:flex;align-items:center;gap:4px}
+.gdot{width:7px;height:7px;border-radius:50%;background:var(--primary);animation:blink 1.5s infinite}
+.alert-bar{background:var(--al);border-bottom:1px solid #F7C1C1;padding:9px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;animation:slideIn .3s ease}
+@keyframes slideIn{from{transform:translateY(-100%);opacity:0}to{transform:translateY(0);opacity:1}}
+.alert-bar span{font-size:12px;color:#791F1F;font-weight:500;flex:1}
+.alert-close{background:none;border:none;cursor:pointer;font-size:14px;color:#A32D2D}
+.list-area{flex:1;overflow-y:auto;padding:12px 14px}
+.list-area::-webkit-scrollbar{display:none}
+.sec-lbl{font-size:11px;font-weight:700;color:var(--tt);letter-spacing:.7px;text-transform:uppercase;margin-bottom:10px}
+.inc-card{background:var(--card);border-radius:14px;padding:12px;display:flex;gap:10px;align-items:center;margin-bottom:8px;box-shadow:0 2px 8px var(--sh);cursor:pointer;transition:transform .1s;animation:fadeIn .3s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.inc-card:hover{transform:translateY(-1px)}
+.inc-ico{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.inc-body{flex:1;min-width:0}
+.inc-t{font-size:14px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inc-d{font-size:12px;color:var(--ts);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.inc-m{display:flex;gap:10px;margin-top:4px}
+.inc-ti{font-size:11px;color:var(--tt)}
+.inc-cf{font-size:11px;color:var(--primary);font-weight:600}
+.cf-btn{background:var(--pl);border:none;border-radius:20px;padding:5px 10px;font-size:12px;font-weight:700;color:var(--pd);cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif;transition:all .15s}
+.cf-btn:hover{background:#a8dfc8}
+.modal-bg{display:none;position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:100;flex-direction:column;justify-content:flex-end}
+.modal-bg.open{display:flex}
+.modal-sheet{background:var(--card);border-radius:24px 24px 0 0;padding:16px 18px 32px;animation:up .3s cubic-bezier(.34,1.56,.64,1);max-height:92%}
+@keyframes up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.m-handle{width:36px;height:4px;background:var(--bd);border-radius:2px;margin:0 auto 16px}
+.steps-bar{display:flex;gap:6px;margin-bottom:16px}
+.step-pill{height:5px;border-radius:3px;flex:1;background:var(--bd);transition:background .3s}
+.step-pill.done{background:var(--primary)}
+.m-title{font-size:17px;font-weight:700;color:var(--tx);margin-bottom:4px}
+.m-sub{font-size:12px;color:var(--ts);margin-bottom:16px}
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.type-btn{border-radius:16px;padding:18px 12px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all .15s}
+.type-btn:hover{transform:scale(.98)}
+.type-btn.acc{background:var(--al);border-color:#F09595}
+.type-btn.emb{background:var(--el);border-color:#FAC775}
+.t-emoji{font-size:30px;display:block;margin-bottom:8px}
+.t-label{font-size:14px;font-weight:700;display:block}
+.t-sub{font-size:11px;display:block;margin-top:3px}
+.type-btn.acc .t-label{color:#791F1F}.type-btn.acc .t-sub{color:var(--acc)}
+.type-btn.emb .t-label{color:#633806}.type-btn.emb .t-sub{color:var(--emb)}
+.cancel-btn{width:100%;padding:12px;text-align:center;font-size:14px;color:var(--ts);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:500}
+.step2-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.back-btn{background:none;border:none;font-size:14px;color:var(--primary);font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;padding:4px 8px}
+.type-pill{display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:13px;font-weight:700}
+.f-label{font-size:13px;font-weight:600;color:var(--tx);margin-bottom:8px;margin-top:14px}
+.f-opt{font-weight:400;color:var(--tt)}
+.grav-row{display:flex;gap:8px}
+.grav-btn{flex:1;padding:10px;border-radius:10px;text-align:center;cursor:pointer;border:2px solid transparent;transition:all .15s;font-size:13px;font-weight:700;font-family:'DM Sans',sans-serif}
+.desc-txt{width:100%;min-height:64px;border:1px solid var(--bd);border-radius:12px;padding:10px;font-size:13px;color:var(--tx);resize:none;outline:none;background:var(--bg);font-family:'DM Sans',sans-serif}
+.desc-txt:focus{border-color:var(--primary)}
+.photo-row{display:flex;gap:10px}
+.photo-btn{flex:1;height:72px;border-radius:12px;border:1.5px dashed var(--bd);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:var(--bg);cursor:pointer}
+.photo-btn:hover{border-color:var(--primary)}
+.photo-btn span{font-size:22px}
+.photo-btn p{font-size:11px;color:var(--ts);font-weight:500}
+.gps-box{display:flex;align-items:center;gap:10px;background:var(--pl);border-radius:12px;padding:11px;margin-top:14px}
+.gps-box-icon{font-size:18px}
+.gps-box-title{font-size:13px;font-weight:600;color:var(--pd)}
+.gps-box-coords{font-size:10px;color:var(--primary);font-family:'DM Mono',monospace;margin-top:2px}
+.gps-live2{width:7px;height:7px;border-radius:50%;background:var(--primary);animation:blink 1s infinite;flex-shrink:0}
+.submit-btn{width:100%;padding:14px;border:none;border-radius:14px;color:#fff;font-size:15px;font-weight:700;cursor:pointer;margin-top:14px;transition:opacity .15s;font-family:'DM Sans',sans-serif}
+.submit-btn:disabled{opacity:.45;cursor:default}
+.disclaimer{font-size:11px;color:var(--tt);text-align:center;margin-top:8px}
+.pg-hd{background:var(--card);padding:14px 18px;border-bottom:.5px solid var(--bd);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.pg-title{font-size:22px;font-weight:700;color:var(--tx);letter-spacing:-.5px}
+.pg-sub{font-size:12px;color:var(--primary);margin-top:2px}
+.mark-btn{background:var(--pl);border:none;border-radius:20px;padding:6px 12px;font-size:12px;color:var(--pd);font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif}
+.a-item{background:var(--card);margin:10px 14px 0;border-radius:14px;padding:12px;display:flex;gap:10px;cursor:pointer;box-shadow:0 2px 8px var(--sh);border-left:3px solid transparent}
+.a-item.unread{border-left-color:var(--primary)}
+.a-ico{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.a-body{flex:1;min-width:0}
+.a-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.a-badge{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700}
+.u-dot{width:8px;height:8px;border-radius:50%;background:var(--primary);flex-shrink:0}
+.a-msg{font-size:13px;color:var(--tx);line-height:1.4}
+.a-time{font-size:11px;color:var(--tt);margin-top:4px}
+.filters{background:var(--card);padding:10px 14px;display:flex;gap:8px;overflow-x:auto;flex-shrink:0;border-bottom:.5px solid var(--bd)}
+.filters::-webkit-scrollbar{display:none}
+.fbtn{padding:6px 14px;border-radius:20px;border:1px solid var(--bd);background:#fff;font-size:12px;font-weight:600;color:var(--ts);cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif}
+.fbtn.active{background:var(--primary);border-color:var(--primary);color:#fff}
+.stats-row-app{display:flex;gap:8px;padding:10px 14px;flex-shrink:0}
+.s-card{flex:1;background:var(--card);border-radius:12px;padding:10px;text-align:center;box-shadow:0 2px 6px var(--sh)}
+.s-val{font-size:22px;font-weight:700;color:var(--primary)}.s-lbl{font-size:10px;color:var(--ts)}
+.i-row{background:var(--card);margin:0 14px 8px;border-radius:14px;padding:12px;display:flex;gap:10px;box-shadow:0 2px 8px var(--sh);animation:fadeIn .3s}
+.i-row.resolu{opacity:.6}
+.i-row-ico{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.i-row-body{flex:1;min-width:0}
+.i-top{display:flex;justify-content:space-between;align-items:center}
+.i-lieu{font-size:14px;font-weight:600;color:var(--tx);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r-badge{background:var(--rl);padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;color:var(--res);flex-shrink:0;margin-left:6px}
+.i-q{font-size:11px;color:var(--tt);margin-top:2px}
+.i-d{font-size:12px;color:var(--ts);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.i-m{display:flex;gap:10px;margin-top:5px}
+.i-ti{font-size:11px;color:var(--tt)}.i-c{font-size:11px;color:var(--primary);font-weight:600}
+.p-card{background:var(--primary);margin:14px;border-radius:18px;padding:18px;display:flex;gap:14px;align-items:center;box-shadow:0 6px 20px rgba(29,158,117,.3)}
+.p-av{width:56px;height:56px;border-radius:28px;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#fff}
+.p-name{font-size:17px;font-weight:700;color:#fff}
+.p-sub{font-size:12px;color:rgba(255,255,255,.8);margin-top:2px}
+.p-bdg{margin-top:6px;background:rgba(255,255,255,.2);padding:3px 10px;border-radius:20px;display:inline-block;font-size:11px;color:#fff;font-weight:600}
+.u-stats{display:flex;gap:8px;padding:0 14px 8px}
+.u-stat{flex:1;background:var(--card);border-radius:12px;padding:12px;text-align:center;box-shadow:0 2px 8px var(--sh)}
+.u-stat-e{font-size:18px;margin-bottom:4px}.u-stat-v{font-size:22px;font-weight:700;color:var(--primary)}.u-stat-l{font-size:10px;color:var(--ts)}
+.m-sec{font-size:11px;font-weight:700;color:var(--tt);letter-spacing:.8px;text-transform:uppercase;padding:12px 14px 6px}
+.m-group{background:var(--card);margin:0 14px;border-radius:14px;overflow:hidden;box-shadow:0 2px 8px var(--sh)}
+.m-item{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:.5px solid var(--bd);cursor:pointer}
+.m-item:last-child{border-bottom:none}.m-item:hover{background:var(--bg)}
+.m-ico{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+.m-ico.g{background:var(--pl)}.m-ico.r{background:var(--al)}
+.m-body{flex:1}.m-t{font-size:14px;font-weight:500;color:var(--tx)}.m-t.danger{color:var(--acc)}
+.m-s{font-size:12px;color:var(--ts);margin-top:1px}.m-arr{font-size:20px;color:var(--tt)}
+
+/* PUSH NOTIFICATION POPUP */
+.push-popup{position:absolute;top:36px;left:10px;right:10px;background:rgba(30,30,30,.96);border-radius:16px;padding:12px 14px;z-index:500;display:flex;gap:10px;align-items:flex-start;box-shadow:0 8px 32px rgba(0,0,0,.5);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);animation:pushIn .4s cubic-bezier(.34,1.56,.64,1)}
+@keyframes pushIn{from{transform:translateY(-80px);opacity:0}to{transform:translateY(0);opacity:1}}
+.push-app-ico{width:32px;height:32px;background:#1D9E75;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.push-content{flex:1;min-width:0}
+.push-app-name{font-size:10px;color:rgba(255,255,255,.5);font-weight:600;margin-bottom:2px}
+.push-notif-title{font-size:13px;font-weight:700;color:#fff;margin-bottom:2px}
+.push-notif-body{font-size:12px;color:rgba(255,255,255,.7);line-height:1.4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.push-time-lbl{font-size:10px;color:rgba(255,255,255,.35);margin-top:4px}
+.push-close{background:none;border:none;color:rgba(255,255,255,.4);font-size:16px;cursor:pointer;padding:0 0 0 4px;flex-shrink:0}
+
+.toast{position:absolute;bottom:88px;left:50%;transform:translateX(-50%);background:rgba(17,24,20,.92);color:#fff;padding:10px 18px;border-radius:30px;font-size:13px;font-weight:500;white-space:nowrap;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+.tab-bar{background:var(--card);border-top:.5px solid var(--bd);display:flex;padding:6px 0 16px;flex-shrink:0}
+.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;padding:4px 0;position:relative}
+.tab-dot{width:4px;height:4px;border-radius:50%;background:var(--primary);margin:0 auto 2px;opacity:0}
+.tab-item.active .tab-dot{opacity:1}
+.tab-emoji{font-size:22px}
+.tab-label{font-size:10px;font-weight:600;color:var(--tt)}
+.tab-item.active .tab-label{color:var(--primary)}
+.tab-notif{position:absolute;top:0;right:20%;width:14px;height:14px;background:#E24B4A;border-radius:50%;font-size:9px;color:#fff;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid var(--card)}
+.scroll-area{flex:1;overflow-y:auto}.scroll-area::-webkit-scrollbar{display:none}
+.leaflet-control-zoom{display:none}
+.leaflet-control-attribution{font-size:8px!important}
+.cpin{display:flex;flex-direction:column;align-items:center}
+.pcircle{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #fff;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.plabel{background:#fff;border-radius:4px;padding:2px 6px;margin-top:1px;font-size:10px;font-weight:700;box-shadow:0 1px 4px rgba(0,0,0,.15);white-space:nowrap;font-family:'DM Sans',sans-serif}
+.leaflet-popup-content-wrapper{border-radius:14px!important;padding:0!important;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.15)!important}
+.leaflet-popup-content{margin:0!important}
+.pop{padding:12px 14px;min-width:180px}
+.pop-badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;margin-bottom:6px}
+.pop-lieu{font-size:14px;font-weight:700;color:#111;margin-bottom:3px;font-family:'DM Sans',sans-serif}
+.pop-desc{font-size:12px;color:#666;margin-bottom:4px;font-family:'DM Sans',sans-serif}
+.pop-meta{font-size:11px;color:#999;font-family:'DM Sans',sans-serif}
+.umark{width:18px;height:18px;border-radius:50%;background:var(--primary);border:3px solid #fff;box-shadow:0 0 0 5px rgba(29,158,117,.2);animation:gpsp 2s infinite}
+@keyframes gpsp{0%,100%{box-shadow:0 0 0 5px rgba(29,158,117,.2)}50%{box-shadow:0 0 0 10px rgba(29,158,117,.07)}}
+</style>
+</head>
+<body>
+
+<div class="phone-frame">
+<div class="notch"></div>
+
+<!-- CARTE -->
+<div class="screen active" id="screen-carte">
+  <div class="sb g"><span class="st">9:41</span><div style="display:flex;gap:5px"><span class="st">📶</span><span class="st">🔋</span></div></div>
+  <div class="topbar">
+    <div class="topbar-row">
+      <div><div class="app-name">TrafiCam</div><div class="app-sub" id="gps-status">📍 Localisation...</div></div>
+      <button class="tb-btn" onclick="switchTab('alertes')">🔔<div class="notif-badge" id="notif-badge" style="display:none">2</div></button>
+    </div>
+  </div>
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="gps-badge"><div class="gdot"></div><span id="gps-lbl">GPS</span></div>
+    <div class="map-ctrls">
+      <button class="map-btn" onclick="centerOnUser()">📍</button>
+      <button class="map-btn" onclick="map.zoomIn()">＋</button>
+      <button class="map-btn" onclick="map.zoomOut()">－</button>
+    </div>
+    <button class="fab" onclick="openModal()">＋</button>
+  </div>
+  <div class="alert-bar" id="alert-bar" style="display:none">
+    <span id="alert-txt">🚨 Incident signalé à proximité</span>
+    <button class="alert-close" onclick="this.parentElement.style.display='none'">✕</button>
+  </div>
+  <div class="list-area">
+    <div class="sec-lbl" id="home-lbl">Chargement...</div>
+    <div id="home-list"></div>
+    <div style="height:12px"></div>
+  </div>
+
+  <!-- PUSH POPUP -->
+  <div id="push-popup" class="push-popup" style="display:none">
+    <div class="push-app-ico">🚦</div>
+    <div class="push-content">
+      <div class="push-app-name">TRAFICAM · MAINTENANT</div>
+      <div class="push-notif-title" id="push-title">🚨 Accident signalé</div>
+      <div class="push-notif-body" id="push-body">Carrefour Nlongkak — Collision 2 véhicules</div>
+      <div class="push-time-lbl">À l'instant</div>
+    </div>
+    <button class="push-close" onclick="fermerPush()">✕</button>
+  </div>
+
+  <!-- MODAL -->
+  <div class="modal-bg" id="modal" onclick="handleOverlay(event)">
+    <div class="modal-sheet">
+      <div class="m-handle"></div>
+      <div class="steps-bar">
+        <div class="step-pill done" id="sp1"></div>
+        <div class="step-pill" id="sp2"></div>
+      </div>
+      <div id="step1">
+        <div class="m-title">Signaler un incident</div>
+        <div class="m-sub">📍 Position GPS capturée automatiquement</div>
+        <div class="type-grid">
+          <div class="type-btn acc" onclick="selectType('accident')"><span class="t-emoji">⚠️</span><span class="t-label">Accident</span><span class="t-sub">Collision, panne</span></div>
+          <div class="type-btn emb" onclick="selectType('bouchon')"><span class="t-emoji">🚦</span><span class="t-label">Embouteillage</span><span class="t-sub">Trafic lent</span></div>
+        </div>
+        <button class="cancel-btn" onclick="closeModal()">Annuler</button>
+      </div>
+      <div id="step2" style="display:none;overflow-y:auto;max-height:68vh">
+        <div class="step2-header">
+          <button class="back-btn" onclick="goStep1()">‹ Retour</button>
+          <div class="type-pill" id="type-pill"></div>
+        </div>
+        <div class="f-label">Niveau de gravité</div>
+        <div class="grav-row">
+          <button class="grav-btn" id="g-leger" onclick="setGravite('leger')" style="background:var(--rl);color:var(--res)">🟢 Léger</button>
+          <button class="grav-btn" id="g-moyen" onclick="setGravite('moyen')" style="background:var(--el);color:#633806;border-color:#EF9F27;border-width:2px">🟠 Moyen</button>
+          <button class="grav-btn" id="g-grave" onclick="setGravite('grave')" style="background:var(--al);color:#791F1F">🔴 Grave</button>
+        </div>
+        <div class="f-label">Description <span class="f-opt">(optionnel)</span></div>
+        <textarea class="desc-txt" id="desc-txt" placeholder="Ex : 2 véhicules impliqués..." rows="2"></textarea>
+        <div class="gps-box">
+          <span class="gps-box-icon">📍</span>
+          <div style="flex:1"><div class="gps-box-title">Position GPS capturée</div><div class="gps-box-coords" id="gps-coords2">En attente...</div></div>
+          <div class="gps-live2"></div>
+        </div>
+        <button class="submit-btn" id="submit-btn" onclick="soumettre()">Signaler maintenant</button>
+        <div class="disclaimer">En signalant, vous aidez les conducteurs. Merci 🙏</div>
+        <div style="height:8px"></div>
+      </div>
+      <div id="step3" style="display:none;text-align:center;padding:24px 0">
+        <div style="font-size:52px;margin-bottom:12px">✅</div>
+        <div style="font-size:18px;font-weight:700;color:var(--tx);margin-bottom:8px">Signalement enregistré !</div>
+        <div style="font-size:13px;color:var(--ts);line-height:1.5;margin-bottom:14px">Sauvegardé en base de données.<br>Notifications push envoyées aux utilisateurs dans 2km.</div>
+        <div style="background:var(--pl);display:inline-block;padding:8px 18px;border-radius:20px;font-size:13px;color:var(--pd);font-weight:700">⭐ +10 points gagnés</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ALERTES -->
+<div class="screen" id="screen-alertes">
+  <div class="sb w"><span class="st">9:41</span><div style="display:flex;gap:5px"><span class="st">📶</span><span class="st">🔋</span></div></div>
+  <div class="pg-hd"><div><div class="pg-title">Mes alertes</div><div class="pg-sub" id="unread-lbl">2 nouvelles</div></div><button class="mark-btn" onclick="markAll()">Tout lu</button></div>
+  <div class="scroll-area" id="alerts-list">
+    <div class="a-item unread" onclick="markRead(this)"><div class="a-ico" style="background:var(--al)">🚨</div><div class="a-body"><div class="a-top"><span class="a-badge" style="background:var(--al);color:var(--acc)">Accident</span><div class="u-dot"></div></div><div class="a-msg">Accident signalé à 500m — Carrefour Nlongkak. Ralentissez.</div><div class="a-time">Il y a 3 min</div></div></div>
+    <div class="a-item unread" onclick="markRead(this)"><div class="a-ico" style="background:var(--el)">🚦</div><div class="a-body"><div class="a-top"><span class="a-badge" style="background:var(--el);color:var(--emb)">Bouchon</span><div class="u-dot"></div></div><div class="a-msg">Embouteillage dense — Avenue Kennedy. +15 min estimés.</div><div class="a-time">Il y a 18 min</div></div></div>
+    <div class="a-item" onclick="markRead(this)"><div class="a-ico" style="background:var(--pl)">✅</div><div class="a-body"><div class="a-top"><span class="a-badge" style="background:var(--pl);color:var(--primary)">Confirmé</span></div><div class="a-msg">Votre signalement confirmé par 6 utilisateurs. Merci !</div><div class="a-time">Il y a 35 min</div></div></div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<!-- INCIDENTS -->
+<div class="screen" id="screen-incidents">
+  <div class="sb w"><span class="st">9:41</span><div style="display:flex;gap:5px"><span class="st">📶</span><span class="st">🔋</span></div></div>
+  <div class="pg-hd"><div><div class="pg-title">Incidents</div><div class="pg-sub" id="inc-count">Chargement...</div></div></div>
+  <div class="filters">
+    <button class="fbtn active" onclick="setFilter('tous',this)">Tous</button>
+    <button class="fbtn" onclick="setFilter('accidents',this)">Accidents</button>
+    <button class="fbtn" onclick="setFilter('bouchons',this)">Bouchons</button>
+    <button class="fbtn" onclick="setFilter('resolus',this)">Résolus</button>
+  </div>
+  <div class="stats-row-app">
+    <div class="s-card"><div class="s-val" id="sa-acc">0</div><div class="s-lbl">Accidents actifs</div></div>
+    <div class="s-card"><div class="s-val" id="sa-emb">0</div><div class="s-lbl">Bouchons actifs</div></div>
+    <div class="s-card"><div class="s-val" id="sa-res">0</div><div class="s-lbl">Résolus</div></div>
+  </div>
+  <div class="scroll-area" id="inc-list" style="padding-top:8px"></div>
+</div>
+
+<!-- PROFIL -->
+<div class="screen" id="screen-profil">
+  <div class="sb w"><span class="st">9:41</span><div style="display:flex;gap:5px"><span class="st">📶</span><span class="st">🔋</span></div></div>
+  <div class="pg-hd"><div class="pg-title">Mon profil</div></div>
+  <div class="scroll-area">
+    <div class="p-card"><div class="p-av">JD</div><div><div class="p-name">Jean Dupont</div><div class="p-sub">Membre depuis juin 2025</div><div class="p-bdg">⭐ Fondateur TrafiCam</div></div></div>
+    <div class="u-stats">
+      <div class="u-stat"><div class="u-stat-e">📍</div><div class="u-stat-v" id="p-sig">0</div><div class="u-stat-l">Signalements</div></div>
+      <div class="u-stat"><div class="u-stat-e">✅</div><div class="u-stat-v" id="p-conf">0</div><div class="u-stat-l">Confirmations</div></div>
+      <div class="u-stat"><div class="u-stat-e">⭐</div><div class="u-stat-v" id="p-pts">0</div><div class="u-stat-l">Points</div></div>
+    </div>
+    <div class="m-sec">Notifications</div>
+    <div class="m-group">
+      <div class="m-item" onclick="showToast('🔔 Push activées — rayon 2km')"><div class="m-ico g">🔔</div><div class="m-body"><div class="m-t">Alertes push</div><div class="m-s">Activées · Rayon 2km</div></div><div class="m-arr">›</div></div>
+      <div class="m-item" onclick="showToast('🚨 Accidents + 🚦 Bouchons')"><div class="m-ico g">⚙️</div><div class="m-body"><div class="m-t">Types d'alertes</div><div class="m-s">Accidents + Bouchons</div></div><div class="m-arr">›</div></div>
+      <div class="m-item" onclick="testerPush()"><div class="m-ico g">🧪</div><div class="m-body"><div class="m-t">Tester une notification</div><div class="m-s">Envoie une push de démo</div></div><div class="m-arr">›</div></div>
+    </div>
+    <div class="m-sec">Paramètres</div>
+    <div class="m-group">
+      <div class="m-item" onclick="showToast('📍 Yaoundé Centre')"><div class="m-ico g">📍</div><div class="m-body"><div class="m-t">Zone de suivi</div><div class="m-s">Yaoundé Centre — Melen</div></div><div class="m-arr">›</div></div>
+      <div class="m-item" onclick="showToast('🚗 Voiture particulière')"><div class="m-ico g">🚗</div><div class="m-body"><div class="m-t">Type de véhicule</div><div class="m-s">Voiture particulière</div></div><div class="m-arr">›</div></div>
+    </div>
+    <div class="m-sec">À propos</div>
+    <div class="m-group">
+      <div class="m-item"><div class="m-ico g">ℹ️</div><div class="m-body"><div class="m-t">À propos</div><div class="m-s">Version 1.5.0 — Module 5</div></div><div class="m-arr">›</div></div>
+      <div class="m-item" onclick="resetDB()"><div class="m-ico r">🗑️</div><div class="m-body"><div class="m-t danger">Réinitialiser les données</div><div class="m-s">Efface tous les incidents de démo</div></div><div class="m-arr">›</div></div>
+    </div>
+    <div style="height:20px"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<div class="tab-bar">
+  <div class="tab-item active" id="tab-carte" onclick="switchTab('carte')"><div class="tab-dot"></div><div class="tab-emoji">🗺️</div><div class="tab-label">Carte</div></div>
+  <div class="tab-item" id="tab-alertes" onclick="switchTab('alertes')"><div class="tab-dot"></div><div class="tab-emoji">🔔</div><div class="tab-label">Alertes</div><div class="tab-notif" id="tab-notif-badge" style="display:none">2</div></div>
+  <div class="tab-item" id="tab-incidents" onclick="switchTab('incidents')"><div class="tab-dot"></div><div class="tab-emoji">📋</div><div class="tab-label">Incidents</div></div>
+  <div class="tab-item" id="tab-profil" onclick="switchTab('profil')"><div class="tab-dot"></div><div class="tab-emoji">👤</div><div class="tab-label">Profil</div></div>
+</div>
+</div>
+
+<!-- BACKEND PANEL -->
+<div class="backend-panel">
+
+  <div class="panel-card">
+    <div class="panel-title">
+      <div class="panel-dot dot-green"></div>Serveur Node.js · Port 3000
+      <span id="ws-count" class="ws-clients" style="margin-left:auto">1 client WS</span>
+    </div>
+    <div class="console-body" id="console"></div>
+  </div>
+
+  <!-- Push Notifications Log — NOUVEAU MODULE 5 -->
+  <div class="panel-card">
+    <div class="panel-title">
+      <div class="panel-dot dot-blue"></div>Expo Push API · Notifications
+      <span style="margin-left:auto;font-size:10px;color:#555;font-family:'DM Mono',monospace" id="push-count">0 envoyées</span>
+    </div>
+    <div class="push-list" id="push-log"></div>
+  </div>
+
+  <div class="panel-card">
+    <div class="panel-title">
+      <div class="panel-dot dot-yellow"></div>Base de données Supabase
+      <span style="margin-left:auto;font-size:10px;color:#555;font-family:'DM Mono',monospace" id="db-count">4 incidents</span>
+    </div>
+    <div class="db-list" id="db-list"></div>
+  </div>
+
+  <div class="panel-card">
+    <div class="panel-title"><div class="panel-dot dot-yellow"></div>Statistiques globales</div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-n" id="total-sig">4</div><div class="stat-l">Total signalements</div></div>
+      <div class="stat-box"><div class="stat-n" id="total-cf">23</div><div class="stat-l">Confirmations</div></div>
+      <div class="stat-box"><div class="stat-n" id="total-push">0</div><div class="stat-l">Push envoyées</div></div>
+      <div class="stat-box"><div class="stat-n" id="total-users">1</div><div class="stat-l">Utilisateurs actifs</div></div>
+    </div>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const DB_KEY = 'traficam_incidents_v5';
+const PROFIL_KEY = 'traficam_profil_v5';
+
+function chargerDB() { try { const r = localStorage.getItem(DB_KEY); return r ? JSON.parse(r) : null; } catch { return null; } }
+function sauverDB(d) { try { localStorage.setItem(DB_KEY, JSON.stringify(d)); } catch {} }
+function chargerProfil() { try { const r = localStorage.getItem(PROFIL_KEY); return r ? JSON.parse(r) : { signalements:0, confirmations:0, points:0 }; } catch { return { signalements:0, confirmations:0, points:0 }; } }
+function sauverProfil(p) { try { localStorage.setItem(PROFIL_KEY, JSON.stringify(p)); } catch {} }
+
+const INCIDENTS_INIT = [
+  { id:'i1', type:'accident', gravite:'grave',  lieu:'Carrefour Nlongkak',      description:'Collision 2 véhicules, voie droite bloquée', lat:3.8720, lng:11.5080, confirmations:4,  statut:'actif', signale_par:'auto', created_at:Date.now()-5*60000 },
+  { id:'i2', type:'bouchon',  gravite:'moyen',  lieu:'Avenue Kennedy',           description:'Trafic très dense, +15 min estimés',          lat:3.8650, lng:11.5200, confirmations:9,  statut:'actif', signale_par:'auto', created_at:Date.now()-12*60000 },
+  { id:'i3', type:'bouchon',  gravite:'moyen',  lieu:'Melen — Direction Centre', description:'Détecté automatiquement par GPS',             lat:3.8850, lng:11.5050, confirmations:12, statut:'actif', signale_par:'gps',  created_at:Date.now()-20*60000 },
+  { id:'i4', type:'accident', gravite:'leger',  lieu:'Carrefour Mvog-Mbi',       description:'Véhicule en panne, une voie bloquée',         lat:3.8480, lng:11.5100, confirmations:3,  statut:'actif', signale_par:'auto', created_at:Date.now()-40*60000 },
+];
+
+let DB = chargerDB() || [...INCIDENTS_INIT];
+let PROFIL = chargerProfil();
+let totalPush = 0;
+
+function resetDB() {
+  if (!confirm('Réinitialiser toutes les données de démo ?')) return;
+  DB = [...INCIDENTS_INIT.map(i => ({ ...i, created_at:Date.now()-Math.random()*60*60000 }))];
+  PROFIL = { signalements:0, confirmations:0, points:0 };
+  totalPush = 0;
+  sauverDB(DB); sauverProfil(PROFIL);
+  renderAll(); updateProfil();
+  document.getElementById('push-log').innerHTML = '';
+  document.getElementById('push-count').textContent = '0 envoyées';
+  document.getElementById('total-push').textContent = '0';
+  apiLog('DELETE', '/incidents', 'Base réinitialisée');
+  showToast('🗑️ Données réinitialisées');
+}
+
+function apiLog(method, route, msg, type) {
+  const cons = document.getElementById('console');
+  const now = new Date().toLocaleTimeString('fr',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const cls = type || (method==='GET'?'log-get':method==='POST'?'log-post':method==='WS'?'log-ws':method==='AUTO'?'log-auto':method==='PUSH'?'log-push':'log-err');
+  const line = document.createElement('div');
+  line.className = 'log-line';
+  line.innerHTML = `<span class="log-time">${now}</span><span class="log-method ${cls}">${method}</span><span class="log-msg">${route} — ${msg}</span>`;
+  cons.appendChild(line);
+  cons.scrollTop = cons.scrollHeight;
+  while (cons.children.length > 30) cons.removeChild(cons.firstChild);
+}
+
+// PUSH NOTIFICATION LOG (backend panel)
+function logPush(type, lieu, nbUsers) {
+  totalPush += nbUsers;
+  document.getElementById('push-count').textContent = `${totalPush} envoyées`;
+  document.getElementById('total-push').textContent = totalPush;
+  const list = document.getElementById('push-log');
+  const isAcc = type === 'accident';
+  const now = new Date().toLocaleTimeString('fr',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const div = document.createElement('div');
+  div.className = 'push-item';
+  div.innerHTML = `
+    <div class="push-ico">${isAcc?'🚨':'🚦'}</div>
+    <div class="push-body">
+      <div class="push-title">${isAcc?'🚨 Accident signalé':'🚦 Bouchon détecté'}</div>
+      <div class="push-msg">${lieu}</div>
+      <div class="push-time">${now} · ${nbUsers} token(s) · Expo Push API</div>
+    </div>
+    <span class="push-badge ${isAcc?'acc':'emb'}">${isAcc?'ACC':'EMB'}</span>`;
+  list.insertBefore(div, list.firstChild);
+  apiLog('PUSH', '/expo-push/send', `→ ${nbUsers} notification(s) push envoyée(s) — ${lieu}`, 'log-push');
+}
+
+// AFFICHAGE POPUP PUSH SUR LE TÉLÉPHONE
+let pushTimer;
+function afficherPushPopup(inc) {
+  const isAcc = inc.type === 'accident';
+  document.getElementById('push-title').textContent = isAcc ? '🚨 Accident signalé' : '🚦 Bouchon détecté';
+  document.getElementById('push-body').textContent = `${inc.lieu} — ${inc.description}`;
+  const popup = document.getElementById('push-popup');
+  popup.style.display = 'flex';
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(fermerPush, 5000);
+  // Badge sur onglet alertes
+  const badge = document.getElementById('tab-notif-badge');
+  badge.style.display = 'flex';
+  badge.textContent = parseInt(badge.textContent || '0') + 1;
+  document.getElementById('notif-badge').style.display = 'flex';
+}
+function fermerPush() { document.getElementById('push-popup').style.display = 'none'; }
+
+function testerPush() {
+  const inc = { type:'accident', lieu:'Test — Rue du test', description:'Notification de test envoyée avec succès' };
+  afficherPushPopup(inc);
+  logPush('accident', 'Test notification', 3);
+  showToast('📨 Push envoyée !');
+}
+
+// CARTE LEAFLET
+const map = L.map('map',{zoomControl:false}).setView([3.8667,11.5167],14);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
+const mapMarkers = {};
+
+function mkPin(type, isAuto) {
+  const bg = type==='accident'?'#E24B4A':'#EF9F27', em = type==='accident'?'⚠️':'🚦', lb = type==='accident'?'Accident':'Bouchon';
+  return L.divIcon({className:'',html:`<div class="cpin"><div class="pcircle" style="background:${bg};border:${isAuto?'3px dashed #fff':'2px solid #fff'}">${em}</div><div class="plabel">${lb}${isAuto?' 🤖':''}</div></div>`,iconSize:[64,52],iconAnchor:[32,52],popupAnchor:[0,-54]});
+}
+function mkPopup(i) {
+  const a=i.type==='accident', auto=i.signale_par==='gps'?' · 🤖 Auto':'';
+  return `<div class="pop"><span class="pop-badge" style="background:${a?'#FCEBEB':'#FAEEDA'};color:${a?'#791F1F':'#633806'}">${a?'Accident':'Bouchon'}</span><div class="pop-lieu">${i.lieu}</div><div class="pop-desc">${i.description}</div><div class="pop-meta">🕐 ${tempsEcoule(i.created_at)} · ✓ ${i.confirmations}${auto}</div></div>`;
+}
+function ajouterPinCarte(inc) {
+  if (mapMarkers[inc.id]) mapMarkers[inc.id].remove();
+  const m = L.marker([inc.lat,inc.lng],{icon:mkPin(inc.type,inc.signale_par==='gps')}).addTo(map).bindPopup(mkPopup(inc),{maxWidth:220});
+  mapMarkers[inc.id] = m;
+}
+function rafraichirPinsCarte() {
+  Object.values(mapMarkers).forEach(m=>m.remove()); Object.keys(mapMarkers).forEach(k=>delete mapMarkers[k]);
+  DB.filter(i=>i.statut==='actif').forEach(ajouterPinCarte);
+}
+let uMarker=null, uPos=null;
+function mkUIcon(){return L.divIcon({className:'',html:'<div class="umark"></div>',iconSize:[18,18],iconAnchor:[9,9]})}
+function centerOnUser(){if(uPos)map.flyTo([uPos.lat,uPos.lng],16,{duration:.8});else showToast('📍 GPS en attente...');}
+
+if(navigator.geolocation){
+  navigator.geolocation.watchPosition(pos=>{
+    const{latitude:la,longitude:lo}=pos.coords;
+    uPos={lat:la,lng:lo};
+    if(uMarker)uMarker.setLatLng([la,lo]);
+    else{uMarker=L.marker([la,lo],{icon:mkUIcon(),zIndexOffset:1000}).addTo(map);map.flyTo([la,lo],15,{duration:1});}
+    document.getElementById('gps-status').textContent='📍 GPS actif — position réelle';
+    document.getElementById('gps-lbl').textContent='GPS actif';
+    document.getElementById('gps-coords2').textContent=`${la.toFixed(5)}, ${lo.toFixed(5)}`;
+  },()=>{document.getElementById('gps-status').textContent='📍 Yaoundé Centre';},{enableHighAccuracy:true,maximumAge:5000,timeout:10000});
+}
+
+// SIMULER POSITIONS GPS
+let slowVehicles=0;
+setInterval(()=>{
+  const vitesse=Math.floor(Math.random()*50);
+  if(vitesse<10){slowVehicles=Math.min(slowVehicles+1,5);}else{slowVehicles=Math.max(0,slowVehicles-1);}
+  if(slowVehicles>=3){
+    const la=3.8667+(Math.random()-.5)*.02, lo=11.5167+(Math.random()-.5)*.02;
+    const dejaSignale=DB.some(i=>i.statut==='actif'&&i.type==='bouchon'&&distKm(la,lo,i.lat,i.lng)<0.3&&Date.now()-i.created_at<10*60000);
+    if(!dejaSignale){
+      apiLog('AUTO','🤖 TrafficAnalyzer',`Bouchon détecté — ${slowVehicles} véhicules lents`);
+      const inc=apiPostIncident({type:'bouchon',gravite:'moyen',lieu:'Zone détectée automatiquement',description:`Bouchon GPS — ${slowVehicles} véhicules lents`,lat:la,lng:lo,signale_par:'gps'});
+      ajouterPinCarte(inc); renderAll();
+      slowVehicles=0;
+    }
+  }
+},6000);
+
+// API simulée
+function apiGetIncidents(){return DB.filter(i=>i.statut==='actif');}
+function apiPostIncident(data){
+  const inc={id:'i'+Date.now(),...data,confirmations:1,statut:'actif',created_at:Date.now()};
+  DB.unshift(inc); sauverDB(DB);
+  apiLog('POST','/incidents',`→ 201 Created — id:${inc.id.slice(0,8)}...`);
+  apiLog('WS','broadcast',`nouvel_incident → ${document.getElementById('ws-count').textContent}`);
+  afficherAlerte(inc);
+  // Simulation envoi push
+  const nbUsers = 2 + Math.floor(Math.random()*5);
+  logPush(inc.type, inc.lieu, nbUsers);
+  afficherPushPopup(inc);
+  return inc;
+}
+function apiConfirmer(id){
+  const inc=DB.find(i=>i.id===id); if(!inc)return;
+  inc.confirmations++; sauverDB(DB);
+  apiLog('POST',`/incidents/${id.slice(0,8)}.../confirmer`,`→ confirmations:${inc.confirmations}`);
+  return inc;
+}
+
+// RENDU
+function tempsEcoule(ts){const d=Math.floor((Date.now()-ts)/60000);if(d<1)return'À l\'instant';if(d<60)return`Il y a ${d} min`;if(d<1440)return`Il y a ${Math.floor(d/60)}h`;return`Il y a ${Math.floor(d/1440)}j`;}
+function renderHome(){
+  const a=DB.filter(i=>i.statut==='actif');
+  document.getElementById('home-lbl').textContent=`Incidents actifs (${a.length})`;
+  document.getElementById('home-list').innerHTML=a.map(i=>{const a2=i.type==='accident';return`<div class="inc-card" onclick="flyTo(${i.lat},${i.lng})"><div class="inc-ico" style="background:${a2?'var(--al)':'var(--el)'}">${a2?'⚠️':'🚦'}</div><div class="inc-body"><div class="inc-t">${i.lieu}</div><div class="inc-d">${i.description}</div><div class="inc-m"><span class="inc-ti">🕐 ${tempsEcoule(i.created_at)}</span><span class="inc-cf" id="cf-${i.id}">✓ ${i.confirmations}</span></div></div><button class="cf-btn" onclick="event.stopPropagation();confirmer('${i.id}')">Confirmer</button></div>`;}).join('');
+}
+function renderIncidents(f='tous'){
+  const fil=DB.filter(i=>{if(f==='accidents')return i.type==='accident';if(f==='bouchons')return i.type==='bouchon';if(f==='resolus')return i.statut==='resolu';return true;});
+  document.getElementById('inc-count').textContent=`${fil.length} signalement${fil.length>1?'s':''}`;
+  document.getElementById('sa-acc').textContent=DB.filter(i=>i.type==='accident'&&i.statut==='actif').length;
+  document.getElementById('sa-emb').textContent=DB.filter(i=>i.type==='bouchon'&&i.statut==='actif').length;
+  document.getElementById('sa-res').textContent=DB.filter(i=>i.statut==='resolu').length;
+  document.getElementById('inc-list').innerHTML=fil.map(i=>{const a=i.type==='accident';return`<div class="i-row ${i.statut==='resolu'?'resolu':''}"><div class="i-row-ico" style="background:${a?'var(--al)':'var(--el)'}">${a?'⚠️':'🚦'}</div><div class="i-row-body"><div class="i-top"><span class="i-lieu">${i.lieu}</span>${i.statut==='resolu'?'<span class="r-badge">Résolu</span>':''}</div><div class="i-q">${i.signale_par==='gps'?'🤖 Détecté auto':'👤 Signalé manuellement'}</div><div class="i-d">${i.description}</div><div class="i-m"><span class="i-ti">🕐 ${tempsEcoule(i.created_at)}</span><span class="i-c">✓ ${i.confirmations}</span></div></div></div>`;}).join('')+'<div style="height:20px"></div>';
+}
+function renderDB(){
+  document.getElementById('db-list').innerHTML=DB.slice(0,8).map(i=>{const auto=i.signale_par==='gps',cls=i.type==='accident'?'acc':auto?'auto':'emb',lbl=i.type==='accident'?'Accident':auto?'AUTO':'Bouchon';return`<div class="db-row"><span class="db-badge ${cls}">${lbl}</span><div class="db-info"><div class="db-lieu">${i.lieu}</div><div class="db-meta">${i.id.slice(0,8)}... · ${tempsEcoule(i.created_at)}</div></div><span class="db-cf">✓${i.confirmations}</span></div>`;}).join('');
+  document.getElementById('db-count').textContent=`${DB.length} incidents`;
+  document.getElementById('total-sig').textContent=DB.length;
+  document.getElementById('total-cf').textContent=DB.reduce((s,i)=>s+i.confirmations,0);
+}
+function updateProfil(){
+  document.getElementById('p-sig').textContent=PROFIL.signalements;
+  document.getElementById('p-conf').textContent=PROFIL.confirmations;
+  document.getElementById('p-pts').textContent=PROFIL.points;
+  document.getElementById('total-users').textContent=1+Math.floor(PROFIL.signalements/3);
+}
+function renderAll(){renderHome();renderIncidents(currentFilter);renderDB();rafraichirPinsCarte();updateProfil();}
+
+// NAVIGATION
+function switchTab(tab){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(t=>t.classList.remove('active'));
+  document.getElementById('screen-'+tab).classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab==='carte')setTimeout(()=>map.invalidateSize(),50);
+  if(tab==='alertes'){document.getElementById('tab-notif-badge').style.display='none';document.getElementById('notif-badge').style.display='none';}
+  if(tab==='incidents')renderIncidents(currentFilter);
+  apiLog('GET',`/${tab}`,'Écran chargé');
+}
+function flyTo(la,lo){switchTab('carte');map.flyTo([la,lo],16,{duration:.8});}
+
+// MODAL
+let curType=null,curGrav='moyen';
+function openModal(){document.getElementById('modal').classList.add('open');goStep1();document.getElementById('desc-txt').value='';}
+function handleOverlay(e){if(e.target===document.getElementById('modal'))closeModal();}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+function goStep1(){document.getElementById('step1').style.display='block';document.getElementById('step2').style.display='none';document.getElementById('step3').style.display='none';document.getElementById('sp2').classList.remove('done');curType=null;}
+function selectType(type){
+  curType=type;const a=type==='accident';
+  document.getElementById('type-pill').innerHTML=`<span>${a?'⚠️':'🚦'}</span><span style="color:${a?'#791F1F':'#633806'}">${a?'Accident':'Embouteillage'}</span>`;
+  document.getElementById('type-pill').style.background=a?'var(--al)':'var(--el)';
+  document.getElementById('submit-btn').style.background=a?'var(--acc)':'var(--emb)';
+  document.getElementById('step1').style.display='none';document.getElementById('step2').style.display='block';document.getElementById('sp2').classList.add('done');
+  setGravite('moyen');
+}
+function setGravite(g){
+  curGrav=g;const cfg={leger:['#27500A','#EAF3DE'],moyen:['#633806','#FAEEDA'],grave:['#791F1F','#FCEBEB']};
+  ['leger','moyen','grave'].forEach(x=>{const el=document.getElementById('g-'+x),[col,bg]=cfg[x];el.style.background=bg;el.style.color=col;el.style.borderColor=x===g?col:'transparent';el.style.borderWidth=x===g?'2px':'1px';});
+}
+function soumettre(){
+  const btn=document.getElementById('submit-btn');btn.textContent='⏳ Envoi en cours...';btn.disabled=true;
+  apiLog('POST','/incidents',`type=${curType} gravite=${curGrav}`);
+  setTimeout(()=>{
+    const pos=uPos||{lat:3.8667+(Math.random()-.5)*.02,lng:11.5167+(Math.random()-.5)*.02};
+    const desc=document.getElementById('desc-txt').value||(curType==='accident'?'Accident signalé':'Embouteillage signalé');
+    const inc=apiPostIncident({type:curType,gravite:curGrav,lieu:'Ma position GPS',description:desc,lat:pos.lat,lng:pos.lng,signale_par:'user'});
+    PROFIL.signalements++;PROFIL.points+=10;sauverProfil(PROFIL);
+    renderAll();ajouterPinCarte(inc);
+    document.getElementById('step2').style.display='none';document.getElementById('step3').style.display='block';
+    btn.textContent='Signaler maintenant';btn.disabled=false;
+    setTimeout(closeModal,2200);
+  },1000);
+}
+
+// CONFIRMATION
+function confirmer(id){
+  const inc=apiConfirmer(id);if(!inc)return;
+  const el=document.getElementById('cf-'+id);if(el)el.textContent='✓ '+inc.confirmations;
+  PROFIL.confirmations++;PROFIL.points+=2;sauverProfil(PROFIL);
+  updateProfil();renderDB();showToast('✅ Confirmé ! +2 points');
+}
+
+let currentFilter='tous';
+function setFilter(f,btn){currentFilter=f;document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderIncidents(f);}
+
+function afficherAlerte(inc){
+  const bar=document.getElementById('alert-bar');
+  document.getElementById('alert-txt').textContent=`${inc.type==='accident'?'🚨':'🚦'} ${inc.type==='accident'?'Accident':'Bouchon'} signalé — ${inc.lieu}`;
+  bar.style.display='flex';
+  setTimeout(()=>{bar.style.display='none';},6000);
+  const list=document.getElementById('alerts-list'),a=inc.type==='accident';
+  const div=document.createElement('div');
+  div.className='a-item unread';div.onclick=function(){markRead(this);};
+  div.innerHTML=`<div class="a-ico" style="background:${a?'var(--al)':'var(--el)'}">${a?'🚨':'🚦'}</div><div class="a-body"><div class="a-top"><span class="a-badge" style="background:${a?'var(--al)':'var(--el)'};color:${a?'var(--acc)':'var(--emb)'}">${a?'Accident':'Bouchon'}</span><div class="u-dot"></div></div><div class="a-msg">${inc.lieu} — ${inc.description}</div><div class="a-time">À l'instant</div></div>`;
+  list.insertBefore(div,list.firstChild);
+  updateUnread();
+}
+function markRead(el){el.classList.remove('unread');const d=el.querySelector('.u-dot');if(d)d.remove();updateUnread();}
+function markAll(){document.querySelectorAll('.a-item.unread').forEach(markRead);}
+function updateUnread(){const n=document.querySelectorAll('.a-item.unread').length;const el=document.getElementById('unread-lbl');el.textContent=n>0?`${n} nouvelle${n>1?'s':''}`:' À jour';el.style.color=n>0?'var(--primary)':'var(--tt)';}
+
+function distKm(la1,lo1,la2,lo2){const R=6371,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180,a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));}
+let toastTimer;
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2800);}
+
+// INIT
+apiLog('GET','/','TrafiCam API v1.5.0 démarré ✅ — Module 5 Push actif');
+apiLog('WS','WebSocket','1 client connecté');
+apiLog('GET','/incidents',`→ ${DB.filter(i=>i.statut==='actif').length} incidents chargés`);
+apiLog('PUSH','Expo Push API','Service notifications initialisé','log-push');
+renderAll();updateUnread();
+setInterval(()=>renderHome(),30000);
+setInterval(()=>{const n=1+Math.floor(Math.random()*4);document.getElementById('ws-count').textContent=`${n} client${n>1?'s':''} WS`;},8000);
+</script>
+</body>
+</html>
