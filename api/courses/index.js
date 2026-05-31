@@ -27,7 +27,7 @@ module.exports = async (req, res) => {
 
   // ── GET /api/courses ──────────────────────────────────────────────────────
   if (req.method === 'GET') {
-    const { mode, lat, lng, rayon = '10', client_id, type_course } = req.query;
+    const { mode, lat, lng, rayon = '10', client_id, type_course, type_vehicule } = req.query;
 
     // Client : mes demandes actives
     if (mode === 'client' && UUID_RE.test(client_id)) {
@@ -41,7 +41,7 @@ module.exports = async (req, res) => {
       return res.json({ success: true, courses: data });
     }
 
-    // Taximan : demandes en attente dans le rayon
+    // Taximan/Moto : demandes en attente dans le rayon
     let query = supabase
       .from('courses')
       .select('*, client:client_id(telephone, nom)')
@@ -50,6 +50,10 @@ module.exports = async (req, res) => {
       .limit(100);
 
     if (type_course) query = query.eq('type_course', type_course);
+
+    // Filtrer par type de véhicule accepté (taxi, moto, ou tous)
+    if (type_vehicule === 'taxi') query = query.in('vehicule_accepte', ['taxi', 'tous']);
+    if (type_vehicule === 'moto') query = query.in('vehicule_accepte', ['moto', 'tous']);
 
     const { data, error } = await query;
     if (error) return res.status(500).json({ erreur: error.message });
@@ -146,14 +150,15 @@ module.exports = async (req, res) => {
     const { data: course, error } = await supabase
       .from('courses')
       .insert([{
-        client_id:      UUID_RE.test(client_id) ? client_id : null,
+        client_id:        UUID_RE.test(client_id) ? client_id : null,
         type_course,
-        depart_lat,     depart_lng,     depart_nom,
-        arrivee_nom,    arrivee_lat,    arrivee_lng,
-        prix_propose:   prix,
-        nb_passagers:   parseInt(nb_passagers),
+        depart_lat,       depart_lng,     depart_nom,
+        arrivee_nom,      arrivee_lat,    arrivee_lng,
+        prix_propose:     prix,
+        nb_passagers:     parseInt(nb_passagers),
         telephone_client,
-        heure_nuit:     nuit,
+        vehicule_accepte: req.body.vehicule_accepte || 'tous',
+        heure_nuit:       nuit,
       }])
       .select()
       .single();
