@@ -1,4 +1,4 @@
-const { supabase } = require('../lib/supabase');
+const supabase = require('../lib/supabase');
 const cors = require('../lib/cors');
 const { rechercherEtNotifierProprietaire } = require('../lib/notifier');
 

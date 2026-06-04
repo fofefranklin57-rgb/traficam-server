@@ -1,4 +1,4 @@
-const { supabase } = require('../lib/supabase');
+const supabase = require('../lib/supabase');
 const cors = require('../lib/cors');
 
 function distKm(la1, lo1, la2, lo2) {

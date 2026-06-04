@@ -1,5 +1,5 @@
-const { supabase } = require('../lib/supabase');
-const { corsHeaders, handleOptions } = require('../lib/cors');
+const supabase = require('../lib/supabase');
+const cors = require('../lib/cors');
 const { genererToken, requireAuth } = require('../lib/auth');
 const rateLimit = require('../lib/rateLimit');
 const { Resend } = require('resend');
@@ -10,8 +10,7 @@ const EXPO_URL = 'https://exp.host/--/api/v2/push/send';
 const ROLES_VALIDES = ['client', 'taximan', 'moto', 'personnel', 'transporteur'];
 
 module.exports = async (req, res) => {
-  if (handleOptions(req, res)) return;
-  res.set(corsHeaders);
+  if (cors(req, res)) return;
 
   const _seg = req.url.split('?')[0].split('/').filter(Boolean); const route = _seg[_seg.length - 1] === 'auth' ? null : _seg.find((s, i) => _seg[i-1] === 'auth');
 
