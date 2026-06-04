@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "description": "TrafiCam — Backend Vercel Serverless + Supabase",
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0"
+    "@supabase/supabase-js": "^2.39.0",
+    "resend": "^6.12.4"
   }
 }
