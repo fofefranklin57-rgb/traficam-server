@@ -12,19 +12,18 @@ module.exports = async (req, res) => {
   if (!google_id || !email) return res.status(400).json({ erreur: 'Données manquantes' });
 
   try {
-    // Cherche l'utilisateur par google_id ou email
+    // Cherche par google_id OU email — évite les doublons inter-méthodes
     let { data: user } = await supabase
       .from('utilisateurs')
       .select('*')
-      .or(`google_id.eq.${google_id},telephone.eq.${email}`)
+      .or(`google_id.eq.${google_id},email.eq.${email}`)
       .maybeSingle();
 
     if (!user) {
-      // Nouvel utilisateur — créer le compte
       const { data: newUser, error } = await supabase
         .from('utilisateurs')
         .insert({
-          telephone: email,
+          email,
           google_id,
           nom: nom || email.split('@')[0],
           photo_url: photo || null,
@@ -40,12 +39,13 @@ module.exports = async (req, res) => {
       if (error) throw error;
       user = newUser;
     } else {
-      // Mise à jour infos Google si besoin
-      await supabase
-        .from('utilisateurs')
-        .update({ google_id, nom: nom || user.nom, photo_url: photo || user.photo_url })
-        .eq('id', user.id);
-      user = { ...user, google_id, nom: nom || user.nom, photo_url: photo || user.photo_url };
+      // Enrichit le compte existant avec google_id et photo
+      const updates = { google_id, photo_url: photo || user.photo_url };
+      if (!user.email) updates.email = email;
+      if (!user.nom || user.nom === user.telephone) updates.nom = nom || user.nom;
+
+      await supabase.from('utilisateurs').update(updates).eq('id', user.id);
+      user = { ...user, ...updates };
     }
 
     const token = genererToken(user.id);

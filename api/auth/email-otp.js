@@ -19,11 +19,7 @@ module.exports = async (req, res) => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     const expires_at = new Date(Date.now() + 10 * 60 * 1000).toISOString();
 
-    await supabase.from('otp_temp').upsert({
-      telephone: email,
-      code,
-      expires_at,
-    });
+    await supabase.from('otp_temp').upsert({ telephone: email, code, expires_at });
 
     await resend.emails.send({
       from: 'TrafiCam <onboarding@resend.dev>',
@@ -59,18 +55,18 @@ module.exports = async (req, res) => {
 
     await supabase.from('otp_temp').delete().eq('telephone', email);
 
-    // Cherche ou crée l'utilisateur
+    // Cherche par email (colonne dédiée) — pas dans telephone
     let { data: user } = await supabase
       .from('utilisateurs')
       .select('*')
-      .eq('telephone', email)
+      .eq('email', email)
       .maybeSingle();
 
     if (!user) {
       const { data: newUser, error } = await supabase
         .from('utilisateurs')
         .insert({
-          telephone: email,
+          email,
           nom: email.split('@')[0],
           role: null,
           plan: 'gratuit',
