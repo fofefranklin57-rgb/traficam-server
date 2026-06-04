@@ -13,7 +13,7 @@ module.exports = async (req, res) => {
   if (handleOptions(req, res)) return;
   res.set(corsHeaders);
 
-  const [route] = [].concat(req.query.params || []);
+  const _seg = req.url.split('?')[0].split('/').filter(Boolean); const route = _seg[_seg.length - 1] === 'auth' ? null : _seg.find((s, i) => _seg[i-1] === 'auth');
 
   // ── POST /api/auth/otp ────────────────────────────────────────────────────
   if (route === 'otp') {

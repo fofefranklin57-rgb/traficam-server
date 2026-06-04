@@ -12,8 +12,7 @@ function distKm(la1, lo1, la2, lo2) {
 module.exports = async (req, res) => {
   if (cors(req, res)) return;
 
-  const params = [].concat(req.query.params || []);
-  const [id, action] = params;
+  const _parts = req.url.split('?')[0].split('/').filter(Boolean); const _base = _parts.indexOf('trous'); const id = _base >= 0 && _parts.length > _base + 1 ? _parts[_base + 1] : null; const action = _base >= 0 && _parts.length > _base + 2 ? _parts[_base + 2] : null;
 
   // ── POST /api/trous/:id/confirmer ─────────────────────────────────────────
   if (id && action === 'confirmer') {

@@ -1,15 +1,24 @@
 {
   "version": 2,
   "functions": {
-    "api/**/*.js": {
-      "maxDuration": 10
-    }
+    "api/*.js": { "maxDuration": 10 }
   },
+  "rewrites": [
+    { "source": "/api/auth/:path*",        "destination": "/api/auth" },
+    { "source": "/api/incidents/:path*",   "destination": "/api/incidents" },
+    { "source": "/api/trous/:path*",       "destination": "/api/trous" },
+    { "source": "/api/courses/:path*",     "destination": "/api/courses" },
+    { "source": "/api/gps/:path*",         "destination": "/api/gps" },
+    { "source": "/api/interurbain/:path*", "destination": "/api/interurbain" },
+    { "source": "/api/abonnements/:path*", "destination": "/api/abonnements" },
+    { "source": "/api/objets/:path*",      "destination": "/api/objets" },
+    { "source": "/api/pub/:path*",         "destination": "/api/pub" }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Origin",  "value": "*" },
         { "key": "Access-Control-Allow-Methods", "value": "GET,POST,PUT,OPTIONS" },
         { "key": "Access-Control-Allow-Headers", "value": "Content-Type,Authorization" }
       ]

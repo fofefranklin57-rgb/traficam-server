@@ -15,7 +15,7 @@ const PLANS  = {
 module.exports = async (req, res) => {
   if (cors(req, res)) return;
 
-  const [route] = [].concat(req.query.params || []);
+  const _seg = req.url.split('?')[0].split('/').filter(Boolean); const route = _seg[_seg.length - 1] === 'abonnements' ? null : _seg.find((s, i) => _seg[i-1] === 'abonnements');
 
   // ── GET /api/abonnements/statut ───────────────────────────────────────────
   if (route === 'statut') {

@@ -22,8 +22,7 @@ function tarifSuggere(type) {
 module.exports = async (req, res) => {
   if (cors(req, res)) return;
 
-  const params = [].concat(req.query.params || []);
-  const [id, action] = params;
+  const _parts = req.url.split('?')[0].split('/').filter(Boolean); const _base = _parts.indexOf('courses'); const id = _base >= 0 && _parts.length > _base + 1 ? _parts[_base + 1] : null; const action = _base >= 0 && _parts.length > _base + 2 ? _parts[_base + 2] : null;
 
   // ── POST /api/courses/:id/accepter ────────────────────────────────────────
   if (id && action === 'accepter') {

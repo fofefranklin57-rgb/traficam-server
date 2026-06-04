@@ -8,7 +8,7 @@ const TYPES_VALIDES = ['cni','passeport','permis','telephone','sac','cles','cart
 module.exports = async (req, res) => {
   if (cors(req, res)) return;
 
-  const [route] = [].concat(req.query.params || []);
+  const _seg = req.url.split('?')[0].split('/').filter(Boolean); const route = _seg[_seg.length - 1] === 'objets' ? null : _seg.find((s, i) => _seg[i-1] === 'objets');
 
   // ── POST /api/objets/recuperer ────────────────────────────────────────────
   if (route === 'recuperer') {
