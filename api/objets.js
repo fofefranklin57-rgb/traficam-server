@@ -1,6 +1,6 @@
-const { supabase } = require('../../lib/supabase');
-const cors = require('../../lib/cors');
-const { rechercherEtNotifierProprietaire } = require('../../lib/notifier');
+const { supabase } = require('../lib/supabase');
+const cors = require('../lib/cors');
+const { rechercherEtNotifierProprietaire } = require('../lib/notifier');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const TYPES_VALIDES = ['cni','passeport','permis','telephone','sac','cles','carte_bancaire','autre'];

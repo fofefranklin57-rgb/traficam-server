@@ -1,5 +1,5 @@
-const { supabase } = require('../../lib/supabase');
-const cors = require('../../lib/cors');
+const { supabase } = require('../lib/supabase');
+const cors = require('../lib/cors');
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 

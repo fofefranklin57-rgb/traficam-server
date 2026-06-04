@@ -1,7 +1,7 @@
-const { supabase } = require('../../lib/supabase');
-const { corsHeaders, handleOptions } = require('../../lib/cors');
-const { genererToken, requireAuth } = require('../../lib/auth');
-const rateLimit = require('../../lib/rateLimit');
+const { supabase } = require('../lib/supabase');
+const { corsHeaders, handleOptions } = require('../lib/cors');
+const { genererToken, requireAuth } = require('../lib/auth');
+const rateLimit = require('../lib/rateLimit');
 const { Resend } = require('resend');
 
 const resend   = new Resend(process.env.RESEND_API_KEY);

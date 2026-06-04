@@ -1,5 +1,5 @@
-const { supabase } = require('../../lib/supabase');
-const cors = require('../../lib/cors');
+const { supabase } = require('../lib/supabase');
+const cors = require('../lib/cors');
 
 function distKm(la1, lo1, la2, lo2) {
   const R = 6371, dLa = (la2-la1)*Math.PI/180, dLo = (lo2-lo1)*Math.PI/180;
@@ -16,7 +16,7 @@ async function analyserTrafic(latitude, longitude, vitesse) {
   const { data: bouchonsProches } = await supabase.from('incidents').select('id, latitude, longitude')
     .eq('statut', 'actif').eq('type', 'bouchon').gte('created_at', new Date(Date.now() - 10 * 60000).toISOString());
   if ((bouchonsProches || []).some(b => distKm(latitude, longitude, b.latitude, b.longitude) < 0.3)) return null;
-  const { notifierUsersProches } = require('../../lib/notifier');
+  const { notifierUsersProches } = require('../lib/notifier');
   const { data: incident } = await supabase.from('incidents').insert([{
     type: 'bouchon', gravite: 'moyen', lieu: 'Zone détectée automatiquement',
     description: `Bouchon GPS — ${lentesProches.length + 1} véhicules lents`,

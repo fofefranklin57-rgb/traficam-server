@@ -1,5 +1,5 @@
-const supabase = require('../../lib/supabase');
-const cors     = require('../../lib/cors');
+const supabase = require('../lib/supabase');
+const cors     = require('../lib/cors');
 
 module.exports = async (req, res) => {
   if (cors(req, res)) return;
