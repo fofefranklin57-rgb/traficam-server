@@ -1,9 +1,11 @@
 const supabase = require('../../lib/supabase');
 const cors = require('../../lib/cors');
 const { genererToken } = require('../../lib/auth');
+const rateLimit = require('../../lib/rateLimit');
 
 module.exports = async (req, res) => {
   if (cors(req, res)) return;
+  if (rateLimit(req, res, { max: 10, windowMs: 60 * 1000 })) return;
   if (req.method !== 'POST') return res.status(405).json({ erreur: 'Méthode non autorisée' });
 
   const { telephone, code } = req.body;

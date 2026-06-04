@@ -1,9 +1,10 @@
 const supabase = require('../../lib/supabase');
 const cors = require('../../lib/cors');
+const rateLimit = require('../../lib/rateLimit');
 
-// Stockage OTP dans Supabase (table temporaire) pour compatibilité serverless
 module.exports = async (req, res) => {
   if (cors(req, res)) return;
+  if (rateLimit(req, res, { max: 5, windowMs: 60 * 1000 })) return;
   if (req.method !== 'POST') return res.status(405).json({ erreur: 'Méthode non autorisée' });
 
   const { telephone } = req.body;
