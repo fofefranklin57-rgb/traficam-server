@@ -1,6 +1,7 @@
 const { supabase } = require('../../lib/supabase');
 const { corsHeaders, handleOptions } = require('../../lib/cors');
 const { Resend } = require('resend');
+const { genererToken } = require('../../lib/auth');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -84,7 +85,8 @@ module.exports = async (req, res) => {
       user = newUser;
     }
 
-    return res.json({ success: true, utilisateur: user });
+    const token = genererToken(user.id);
+    return res.json({ success: true, utilisateur: user, token });
   }
 
   return res.status(400).json({ erreur: 'Action invalide' });

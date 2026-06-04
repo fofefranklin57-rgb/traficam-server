@@ -1,5 +1,6 @@
 const { supabase } = require('../../lib/supabase');
 const { corsHeaders, handleOptions } = require('../../lib/cors');
+const { genererToken } = require('../../lib/auth');
 
 module.exports = async (req, res) => {
   if (handleOptions(req, res)) return;
@@ -47,7 +48,8 @@ module.exports = async (req, res) => {
       user = { ...user, google_id, nom: nom || user.nom, photo_url: photo || user.photo_url };
     }
 
-    return res.json({ success: true, utilisateur: user });
+    const token = genererToken(user.id);
+    return res.json({ success: true, utilisateur: user, token });
   } catch (e) {
     console.error('Erreur auth Google:', e);
     return res.status(500).json({ erreur: e.message });

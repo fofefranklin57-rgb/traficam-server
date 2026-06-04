@@ -1,5 +1,6 @@
 const supabase = require('../../lib/supabase');
 const cors = require('../../lib/cors');
+const { genererToken } = require('../../lib/auth');
 
 module.exports = async (req, res) => {
   if (cors(req, res)) return;
@@ -25,5 +26,6 @@ module.exports = async (req, res) => {
     user = newUser;
   }
 
-  res.json({ success: true, utilisateur: user });
+  const token = genererToken(user.id);
+  res.json({ success: true, utilisateur: user, token });
 };
