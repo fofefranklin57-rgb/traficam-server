@@ -87,7 +87,9 @@ module.exports = async (req, res) => {
     if (action === 'envoyer') {
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expires_at = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-      await supabase.from('otp_temp').upsert({ telephone: email, code: otpCode, expires_at }, { onConflict: 'telephone' });
+      await supabase.from('otp_temp').delete().eq('telephone', email);
+      const { error: insertErr } = await supabase.from('otp_temp').insert({ telephone: email, code: otpCode, expires_at });
+      if (insertErr) return res.status(500).json({ erreur: 'Erreur sauvegarde OTP: ' + insertErr.message });
       await resend.emails.send({
         from: 'TrafiCam <onboarding@resend.dev>', to: email,
         subject: `${otpCode} — Votre code TrafiCam`,
@@ -175,7 +177,8 @@ module.exports = async (req, res) => {
       if (existe) return res.status(409).json({ erreur: 'Cet email est déjà utilisé par un autre compte' });
       const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
       const expires_at = new Date(Date.now() + 10 * 60 * 1000).toISOString();
-      await supabase.from('otp_temp').upsert({ telephone: `email_lier_${userId}`, code: otpCode, expires_at }, { onConflict: 'telephone' });
+      await supabase.from('otp_temp').delete().eq('telephone', `email_lier_${userId}`);
+      await supabase.from('otp_temp').insert({ telephone: `email_lier_${userId}`, code: otpCode, expires_at });
       await resend.emails.send({
         from: 'TrafiCam <onboarding@resend.dev>', to: email,
         subject: `${otpCode} — Confirmez votre email TrafiCam`,
