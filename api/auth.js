@@ -117,6 +117,42 @@ module.exports = async (req, res) => {
     return res.status(400).json({ erreur: 'Action invalide' });
   }
 
+  // ── POST /api/auth/facebook ───────────────────────────────────────────────
+  if (route === 'facebook') {
+    if (req.method !== 'POST') return res.status(405).json({ erreur: 'Méthode non autorisée' });
+    const { access_token } = req.body;
+    if (!access_token) return res.status(400).json({ erreur: 'access_token manquant' });
+    try {
+      const fbRes = await fetch(`https://graph.facebook.com/me?fields=id,name,email,picture.type(large)&access_token=${access_token}`);
+      const fbUser = await fbRes.json();
+      if (fbUser.error) return res.status(401).json({ erreur: 'Token Facebook invalide: ' + fbUser.error.message });
+      const { id: facebook_id, name: nom, email, picture } = fbUser;
+      const photo_url = picture?.data?.url || null;
+      const query = email
+        ? `facebook_id.eq.${facebook_id},email.eq.${email}`
+        : `facebook_id.eq.${facebook_id}`;
+      let { data: user } = await supabase.from('utilisateurs').select('*').or(query).maybeSingle();
+      if (!user) {
+        const { data: newUser, error } = await supabase.from('utilisateurs').insert({
+          email: email || null, facebook_id, nom: nom || 'Utilisateur', photo_url,
+          role: null, plan: 'gratuit', signalements: 0, confirmations: 0, points: 0,
+        }).select().single();
+        if (error) throw error;
+        user = newUser;
+      } else {
+        const updates = { facebook_id, photo_url: photo_url || user.photo_url };
+        if (!user.email && email) updates.email = email;
+        if (!user.nom || user.nom === 'Utilisateur') updates.nom = nom || user.nom;
+        await supabase.from('utilisateurs').update(updates).eq('id', user.id);
+        user = { ...user, ...updates };
+      }
+      const token = genererToken(user.id);
+      return res.json({ success: true, utilisateur: user, token });
+    } catch (e) {
+      return res.status(500).json({ erreur: e.message });
+    }
+  }
+
   // ── PUT /api/auth/profil ──────────────────────────────────────────────────
   if (route === 'profil') {
     if (req.method !== 'PUT') return res.status(405).json({ erreur: 'Méthode non autorisée' });
